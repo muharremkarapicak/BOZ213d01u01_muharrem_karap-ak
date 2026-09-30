@@ -1,0 +1,111 @@
+import tkinter as tk
+from tkinter import messagebox
+import random
+
+# Global değişkenler
+boyut = 5
+hedef_satir = 0
+hedef_sutun = 0
+mermi = 5
+butonlar = []
+
+def oyunu_baslat():
+    """Oyunu sıfırlar ve hedefi yeni bir yere saklar."""
+    global hedef_satir, hedef_sutun, mermi
+    hedef_satir = random.randint(0, boyut - 1)
+    hedef_sutun = random.randint(0, boyut - 1)
+    mermi = 5
+    
+    bilgi_etiketi.config(text=f"Hedefi bulmak için kutulara tıkla!\nKalan Mermi: {mermi}")
+    
+    # Tüm butonları başlangıç haline (gri ve tıklanabilir) döndür
+    for r in range(boyut):
+        for c in range(boyut):
+            butonlar[r][c].config(
+                text="?", 
+                bg="#34495e", 
+                fg="white", 
+                state=tk.NORMAL,
+                disabledforeground="black"
+            )
+
+def butona_tikla(r, c):
+    """Kullanıcı bir kutuya tıkladığında çalışır."""
+    global mermi
+    
+    if mermi <= 0:
+        return
+        
+    mermi -= 1
+    
+    # Tam İsabet!
+    if r == hedef_satir and c == hedef_sutun:
+        butonlar[r][c].config(text="🎯", bg="#2ecc71", state=tk.DISABLED) # Yeşil
+        bilgi_etiketi.config(text="🎉 TEBRİKLER! Hedefi vurdun! 🎉")
+        oyunu_bitir(kazandi=True)
+    else:
+        # Iskaladı - Uzaklık hesapla (Sıcak/Soğuk)
+        uzaklik = abs(hedef_satir - r) + abs(hedef_sutun - c)
+        
+        if uzaklik <= 2:
+            butonlar[r][c].config(text="🔥", bg="#e67e22", state=tk.DISABLED) # Turuncu (Sıcak)
+            bilgi_etiketi.config(text=f"Çok Yakınsın! (Sıcak)\nKalan Mermi: {mermi}")
+        else:
+            butonlar[r][c].config(text="❄️", bg="#3498db", state=tk.DISABLED) # Mavi (Soğuk)
+            bilgi_etiketi.config(text=f"Hedef buralarda değil. (Soğuk)\nKalan Mermi: {mermi}")
+            
+        # Mermi bittiyse oyunu bitir
+        if mermi == 0:
+            bilgi_etiketi.config(text="💀 Mermin bitti! Hedef kaçtı. 💀")
+            # Hedefin gerçek yerini kırmızı ile göster
+            butonlar[hedef_satir][hedef_sutun].config(text="🎯", bg="#e74c3c", state=tk.DISABLED)
+            oyunu_bitir(kazandi=False)
+
+def oyunu_bitir(kazandi):
+    """Oyun bitince tüm butonları tıklanamaz hale getirir."""
+    for r in range(boyut):
+        for c in range(boyut):
+            butonlar[r][c].config(state=tk.DISABLED)
+            
+    if kazandi:
+        messagebox.showinfo("Sonuç", "Harika! Hedefi tam isabet vurdun! 🏆")
+    else:
+        messagebox.showerror("Sonuç", "Maalesef mermin bitti. Hedef kaçtı! 🏃‍♂️💨")
+
+# --- ARAYÜZ (GUI) TASARIMI ---
+pencere = tk.Tk()
+pencere.title("Keskin Nişancı - Görsel Sürüm")
+pencere.geometry("400x550")
+pencere.configure(bg="#2c3e50")
+pencere.eval('tk::PlaceWindow . center') # Ekranın ortasında açılmasını sağlar
+
+baslik = tk.Label(pencere, text="🎯 HEDEF VURMA 🎯", font=("Helvetica", 18, "bold"), bg="#2c3e50", fg="#f1c40f")
+baslik.pack(pady=(15, 5))
+
+bilgi_etiketi = tk.Label(pencere, text="", font=("Helvetica", 12), bg="#2c3e50", fg="#ecf0f1")
+bilgi_etiketi.pack(pady=10)
+
+# Butonların içine yerleşeceği ızgara (Grid) çerçevesi
+grid_frame = tk.Frame(pencere, bg="#2c3e50")
+grid_frame.pack(pady=10)
+
+# 5x5 Butonları oluştur
+butonlar = [[None for _ in range(boyut)] for _ in range(boyut)]
+
+for satir in range(boyut):
+    for sutun in range(boyut):
+        # lambda fonksiyonu, her butonun kendi satır ve sütun numarasını hatırlamasını sağlar
+        btn = tk.Button(grid_frame, font=("Helvetica", 16, "bold"), width=4, height=2, cursor="target",
+                        command=lambda r=satir, c=sutun: butona_tikla(r, c))
+        btn.grid(row=satir, column=sutun, padx=5, pady=5)
+        butonlar[satir][sutun] = btn
+
+yeniden_buton = tk.Button(pencere, text="🔄 Yeniden Başlat", font=("Helvetica", 12, "bold"), 
+                          bg="#9b59b6", fg="white", activebackground="#8e44ad", cursor="hand2", command=oyunu_baslat)
+yeniden_buton.pack(pady=20)
+
+# Uygulama açıldığında ilk oyunu başlat
+oyunu_baslat()
+
+# Pencereyi açık tut
+pencere.mainloop()
